@@ -1,0 +1,60 @@
+{
+  "categories": [
+    {
+      "name": "Transport",
+      "subcategories": ["Cab", "Train", "Bus", "Auto", "Flight", "Fuel", "Parking", "Other"]
+    },
+    {
+      "name": "Groceries",
+      "subcategories": ["Fruits & Vegetables", "Dairy", "Meat & Seafood", "Snacks", "Beverages", "Household Supplies", "Other"]
+    },
+    {
+      "name": "Food",
+      "subcategories": ["Dining Out", "Takeaway", "Cafes", "Street Food", "Other"]
+    },
+    {
+      "name": "Shopping",
+      "subcategories": ["Clothing", "Electronics", "Footwear", "Accessories", "Books", "Home Decor", "Other"]
+    },
+    {
+      "name": "Utilities",
+      "subcategories": ["Electricity", "Water", "Gas", "Internet", "Mobile Recharge", "Other"]
+    },
+    {
+      "name": "Health",
+      "subcategories": ["Medical", "Medicines", "Gym", "Wellness", "Insurance", "Other"]
+    },
+    {
+      "name": "Entertainment",
+      "subcategories": ["Subscriptions", "Movies", "Events", "Sports", "Games", "Other"]
+    },
+    {
+      "name": "Education",
+      "subcategories": ["Tuition", "Books & Stationery", "Online Courses", "Other"]
+    },
+    {
+      "name": "Travel",
+      "subcategories": ["Hotel", "Flight", "Tours", "Visa & Documentation", "Other"]
+    },
+    {
+      "name": "Personal Care",
+      "subcategories": ["Salon", "Skincare", "Haircare", "Other"]
+    },
+    {
+      "name": "Home",
+      "subcategories": ["Rent", "Maintenance", "Furniture", "Appliances", "Other"]
+    },
+    {
+      "name": "Finance",
+      "subcategories": ["Loan EMI", "Credit Card Payment", "Investment", "Insurance Premium", "Other"]
+    },
+    {
+      "name": "Gifts & Donations",
+      "subcategories": ["Gifts", "Charity", "Religious", "Other"]
+    },
+    {
+      "name": "Other",
+      "subcategories": ["Miscellaneous"]
+    }
+  ]
+}
