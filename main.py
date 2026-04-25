@@ -21,7 +21,11 @@ def init_db():
                 description TEXT
             )
         """)
-
+        # One-time migration: add description column if it doesn't exist
+        try:
+            conn.execute("ALTER TABLE expenses ADD COLUMN description TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column already exists, ignore
 
 # Call init manually (important)
 init_db()
