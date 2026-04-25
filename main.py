@@ -1,8 +1,9 @@
 from fastmcp import FastMCP
 import os
-import sqlite3
+import aiosqlite   # ✅ CHANGED: sqlite3 → aiosqlite (async DB)
 import tempfile
 import json
+import asyncio     # ✅ ADDED: for async execution
 
 # ✅ Always writable location
 DB_PATH = os.path.join(tempfile.gettempdir(), "expenses.db")
@@ -14,12 +15,12 @@ mcp = FastMCP("ExpenseTracker")
 
 
 # -------------------- INIT DB --------------------
-def init_db():
+async def init_db():   # ✅ CHANGED: made async
     try:
-        with sqlite3.connect(DB_PATH) as c:
-            c.execute("PRAGMA journal_mode=WAL")
+        async with aiosqlite.connect(DB_PATH) as db:   # ✅ CHANGED: async connection
+            await db.execute("PRAGMA journal_mode=WAL")   # ✅ CHANGED: await
 
-            c.execute("""
+            await db.execute("""
                 CREATE TABLE IF NOT EXISTS expenses (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     date TEXT NOT NULL,
@@ -31,11 +32,14 @@ def init_db():
             """)
 
             # test write access
-            c.execute("""
+            await db.execute("""
                 INSERT OR IGNORE INTO expenses (date, amount, category)
                 VALUES ('2000-01-01', 0, 'test')
             """)
-            c.execute("DELETE FROM expenses WHERE category = 'test'")
+
+            await db.execute("DELETE FROM expenses WHERE category = 'test'")
+
+            await db.commit()   # ✅ CHANGED: async commit
 
         print("Database initialized successfully")
 
@@ -44,24 +48,27 @@ def init_db():
         raise
 
 
-init_db()
+# ✅ CHANGED: run async function using event loop
+asyncio.run(init_db())
 
 
 # -------------------- ADD EXPENSE --------------------
 @mcp.tool()
-def add_expense(date, amount, category, subcategory="", note=""):
+async def add_expense(date, amount, category, subcategory="", note=""):  # ✅ CHANGED: async function
     try:
-        with sqlite3.connect(DB_PATH) as c:
-            cur = c.execute(
+        async with aiosqlite.connect(DB_PATH) as db:   # ✅ CHANGED
+            cur = await db.execute(   # ✅ CHANGED: await
                 """
                 INSERT INTO expenses (date, amount, category, subcategory, note)
                 VALUES (?, ?, ?, ?, ?)
                 """,
                 (date, amount, category, subcategory, note)
             )
+            await db.commit()   # ✅ CHANGED
+
             return {"status": "success", "id": cur.lastrowid}
 
-    except sqlite3.OperationalError as e:
+    except aiosqlite.OperationalError as e:   # ✅ CHANGED: aiosqlite error
         if "readonly" in str(e).lower():
             return {"status": "error", "message": "Database is read-only"}
         return {"status": "error", "message": str(e)}
@@ -72,10 +79,10 @@ def add_expense(date, amount, category, subcategory="", note=""):
 
 # -------------------- LIST EXPENSES --------------------
 @mcp.tool()
-def list_expenses(start_date, end_date):
+async def list_expenses(start_date, end_date):   # ✅ CHANGED
     try:
-        with sqlite3.connect(DB_PATH) as c:
-            cur = c.execute(
+        async with aiosqlite.connect(DB_PATH) as db:
+            cur = await db.execute(   # ✅ CHANGED
                 """
                 SELECT id, date, amount, category, subcategory, note
                 FROM expenses
@@ -85,8 +92,10 @@ def list_expenses(start_date, end_date):
                 (start_date, end_date)
             )
 
+            rows = await cur.fetchall()   # ✅ CHANGED: async fetch
             cols = [d[0] for d in cur.description]
-            return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+            return [dict(zip(cols, r)) for r in rows]
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -94,9 +103,9 @@ def list_expenses(start_date, end_date):
 
 # -------------------- SUMMARIZE --------------------
 @mcp.tool()
-def summarize(start_date, end_date, category=None):
+async def summarize(start_date, end_date, category=None):   # ✅ CHANGED
     try:
-        with sqlite3.connect(DB_PATH) as c:
+        async with aiosqlite.connect(DB_PATH) as db:
             query = """
                 SELECT category, SUM(amount) AS total_amount, COUNT(*) as count
                 FROM expenses
@@ -110,10 +119,11 @@ def summarize(start_date, end_date, category=None):
 
             query += " GROUP BY category ORDER BY total_amount DESC"
 
-            cur = c.execute(query, params)
+            cur = await db.execute(query, params)   # ✅ CHANGED
+            rows = await cur.fetchall()             # ✅ CHANGED
             cols = [d[0] for d in cur.description]
 
-            return [dict(zip(cols, r)) for r in cur.fetchall()]
+            return [dict(zip(cols, r)) for r in rows]
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -121,11 +131,13 @@ def summarize(start_date, end_date, category=None):
 
 # -------------------- CATEGORIES --------------------
 @mcp.resource("expense://categories", mime_type="application/json")
-def categories():
+async def categories():   # ✅ CHANGED: made async
     try:
         if os.path.exists(CATEGORIES_PATH):
-            with open(CATEGORIES_PATH, "r", encoding="utf-8") as f:
-                return f.read()
+            # ✅ CHANGED: file I/O wrapped in thread (since it's blocking)
+            return await asyncio.to_thread(
+                lambda: open(CATEGORIES_PATH, "r", encoding="utf-8").read()
+            )
         else:
             default = {
                 "categories": [
