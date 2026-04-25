@@ -5,14 +5,13 @@ import tempfile
 import json
 import asyncio
 
-# ✅ Always writable location
+# -------------------- PATHS --------------------
 DB_PATH = os.path.join(tempfile.gettempdir(), "expenses.db")
 CATEGORIES_PATH = os.path.join(os.path.dirname(__file__), "categories.json")
 
 print(f"Database path: {DB_PATH}")
 
 mcp = FastMCP("ExpenseTracker")
-
 
 # -------------------- INIT DB --------------------
 async def init_db():
@@ -31,13 +30,13 @@ async def init_db():
                 )
             """)
 
+            # test write
             await db.execute("""
                 INSERT OR IGNORE INTO expenses (date, amount, category)
                 VALUES ('2000-01-01', 0, 'test')
             """)
 
             await db.execute("DELETE FROM expenses WHERE category = 'test'")
-
             await db.commit()
 
         print("Database initialized successfully")
@@ -47,12 +46,8 @@ async def init_db():
         raise
 
 
-# ❌ REMOVED this line (CAUSE OF FAILURE)
-# asyncio.run(init_db())
-
-
-# ✅ ADDED: Proper FastMCP startup hook (THIS FIXES YOUR BUILD)
-@mcp.on_startup
+# ✅ FIX: Proper startup hook (NO asyncio.run)
+@mcp.on_event("startup")
 async def startup():
     await init_db()
 
@@ -70,7 +65,6 @@ async def add_expense(date, amount, category, subcategory="", note=""):
                 (date, amount, category, subcategory, note)
             )
             await db.commit()
-
             return {"status": "success", "id": cur.lastrowid}
 
     except aiosqlite.OperationalError as e:
